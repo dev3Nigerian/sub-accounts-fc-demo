@@ -14,7 +14,7 @@ export interface AnonymousPost {
 // Convert MongoDB document to AnonymousPost
 function docToPost(doc: IPost): AnonymousPost {
   return {
-    id: doc.id || doc._id.toString(),
+    id: doc.id || (doc._id as unknown as string).toString(),
     text: doc.text,
     authorAddress: doc.authorAddress as `0x${string}` | null,
     timestamp: doc.timestamp.toISOString(),
