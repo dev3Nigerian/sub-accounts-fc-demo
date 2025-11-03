@@ -3,11 +3,11 @@
         "version": "1",
         "name": "Anonymous Forum",
         "description": "A decentralized anonymous forum where users can post and receive USDC tips on Base",
-        "iconUrl": "/icons/icon-1024.png",
+        "iconUrl": "https://sub-accounts-fc-demo.vercel.app/icons/icon-1024.png",
         "homeUrl": "https://sub-accounts-fc-demo.vercel.app",
-        "splashImageUrl": "/icons/splash-200.png",
+        "splashImageUrl": "https://sub-accounts-fc-demo.vercel.app/icons/splash-200.png",
         "splashBackgroundColor": "#191a43",
-        "heroImageUrl": "/icons/hero-1200x630.png",
+        "heroImageUrl": "https://sub-accounts-fc-demo.vercel.app/icons/hero-1200x630.png",
         "tagline": "Post anonymously, tip freely"
     }
 }
