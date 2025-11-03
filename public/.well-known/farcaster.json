@@ -10,7 +10,23 @@
         "webhookUrl": "https://sub-accounts-fc-demo.vercel.app/api/webhook",
         "subtitle": "Post anonymously, tip freely",
         "description": "A decentralized anonymous forum where users can post and receive USDC tips on Base",
-        "primaryCategory": "social"
+        "primaryCategory": "social",
+        "tags": [
+            "forum",
+            "anonymous",
+            "tipping",
+            "usdc",
+            "base"
+        ],
+        "heroImageUrl": "https://sub-accounts-fc-demo.vercel.app/icons/hero-1200x630.png",
+        "tagline": "Post anonymously, tip freely",
+        "screenshotUrls": [
+            "https://sub-accounts-fc-demo.vercel.app/icons/hero-1200x630.png"
+        ],
+        "ogTitle": "Anonymous Forum",
+        "ogDescription": "Post anonymously, tip freely",
+        "ogImageUrl": "https://sub-accounts-fc-demo.vercel.app/icons/hero-1200x630.png",
+        "noindex": false
     },
     "accountAssociation": {
         "header": "eyJmaWQiOjU4NzY4OSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDNDMDkxRTc1YUU5NUE4MWVGMjhlMTVkMjM0QUY5NmE3MDEwNTAyMUUifQ",
