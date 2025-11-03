@@ -52,7 +52,7 @@ PostSchema.index({ createdAt: -1 });
 
 // Transform _id to id in JSON responses
 PostSchema.set("toJSON", {
-  transform: function (doc, ret) {
+  transform: function (doc, ret: any) {
     ret.id = ret._id.toString();
     delete ret._id;
     delete ret.__v;
