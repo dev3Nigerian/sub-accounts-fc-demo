@@ -31,6 +31,9 @@ CDP_API_KEY_ID=your-api-key-id
 CDP_API_KEY_SECRET=your-api-key-secret
 CDP_WALLET_SECRET=your-wallet-secret
 
+# MongoDB Connection String (required for posts storage)
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database-name?retryWrites=true&w=majority
+
 # Neynar API Key (if using posts feature)
 NEXT_NEYNAR_API_KEY=your-neynar-api-key
 ```

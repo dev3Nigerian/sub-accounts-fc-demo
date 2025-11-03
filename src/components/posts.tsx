@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { USDC, erc20Abi } from "@/lib/usdc";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Heart, Repeat2, Send, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -53,6 +53,9 @@ export interface Post {
   replies: {
     count: number;
   };
+  // Custom fields for anonymous posts
+  tipsCount?: number;
+  totalTipsAmount?: string;
 }
 
 interface PostsResponse {
@@ -140,18 +143,12 @@ export default function Posts({ onTipSuccess }: { onTipSuccess: () => void }) {
     );
   }
 
-  // Flatten all pages and filter posts to only show those with valid eth addresses
+  // Flatten all pages - show all posts (anonymous posts don't need addresses)
   const allPosts = data?.pages.flatMap((page) => page.posts) || [];
-  const postsWithValidAddresses = allPosts.filter(
-    (post: Post) =>
-      post.author.verified_addresses.eth_addresses &&
-      post.author.verified_addresses.eth_addresses.length > 0 &&
-      isAddress(post.author.verified_addresses.eth_addresses[0])
-  );
 
   return (
     <div className="space-y-4">
-      {postsWithValidAddresses.map((post) => (
+      {allPosts.map((post) => (
         <PostCard
           key={post.id}
           post={post}
@@ -174,7 +171,7 @@ export default function Posts({ onTipSuccess }: { onTipSuccess: () => void }) {
             <span>Loading more posts...</span>
           </div>
         )}
-        {!hasNextPage && postsWithValidAddresses.length > 0 && (
+        {!hasNextPage && allPosts.length > 0 && (
           <div className="text-center text-muted-foreground text-sm">
             No more posts to load
           </div>
@@ -206,6 +203,7 @@ function PostCard({
   setTippingPostId: (id: string | null) => void;
 }) {
   const account = useAccount();
+  const queryClient = useQueryClient();
   const { data: balance } = useBalance({
     address: account.address,
     token: USDC.address,
@@ -218,13 +216,22 @@ function PostCard({
   const isThisPostTipping = tippingPostId === post.id;
 
   const handleTip = useCallback(async () => {
+    const recipientAddress = post.author.verified_addresses.eth_addresses?.[0];
+    
+    if (!recipientAddress || !isAddress(recipientAddress)) {
+      toast.error("Cannot tip this post", {
+        description: "This post doesn't have a valid Ethereum address for receiving tips",
+      });
+      return;
+    }
+
     setTippingPostId(post.id);
 
     const data = encodeFunctionData({
       abi: erc20Abi,
       functionName: "transfer",
       args: [
-        post.author.verified_addresses.eth_addresses[0],
+        recipientAddress,
         parseUnits("0.10", USDC.decimals),
       ],
     });
@@ -236,7 +243,7 @@ function PostCard({
     });
 
     const toastId_ = toast("Sending tip...", {
-      description: `Tipping @${post.author.username} with 0.10 USDC`,
+      description: `Tipping ${post.author.display_name} with 0.10 USDC`,
       duration: Infinity,
     });
 
@@ -244,11 +251,14 @@ function PostCard({
   }, [post.author, post.id, sendTransaction, setTippingPostId]);
 
   const handleCustomTip = useCallback(async () => {
-    if (
-      !customTipAmount ||
-      !isAddress(post.author.verified_addresses.eth_addresses[0])
-    )
+    const recipientAddress = post.author.verified_addresses.eth_addresses?.[0];
+    
+    if (!customTipAmount || !recipientAddress || !isAddress(recipientAddress)) {
+      toast.error("Cannot tip this post", {
+        description: "This post doesn't have a valid Ethereum address for receiving tips",
+      });
       return;
+    }
 
     try {
       setTippingPostId(post.id);
@@ -257,7 +267,7 @@ function PostCard({
         abi: erc20Abi,
         functionName: "transfer",
         args: [
-          post.author.verified_addresses.eth_addresses[0],
+          recipientAddress,
           parseUnits(customTipAmount, USDC.decimals),
         ],
       });
@@ -269,7 +279,7 @@ function PostCard({
       });
 
       const toastId_ = toast("Sending custom tip...", {
-        description: `Tipping @${post.author.username} with ${customTipAmount} USDC`,
+        description: `Tipping ${post.author.display_name} with ${customTipAmount} USDC`,
         duration: Infinity,
       });
 
@@ -302,8 +312,19 @@ function PostCard({
 
   useEffect(() => {
     if (isConfirmed && toastId !== null && isThisPostTipping) {
+      const tipAmount = customTipAmount || "0.10";
+      
+      // Update tip count on the server (async, don't wait)
+      fetch(`/api/posts/${post.id}/tip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: tipAmount }),
+      }).catch(() => {
+        // Silently fail - this is just for stats
+      });
+
       toast.success("Tip sent successfully!", {
-        description: `You tipped @${post.author.username} with ${customTipAmount || "0.10"} USDC`,
+        description: `You tipped ${post.author.display_name} with ${tipAmount} USDC`,
         duration: 2000,
       });
 
@@ -314,17 +335,22 @@ function PostCard({
       setToastId(null);
       setTippingPostId(null);
       resetTransaction();
+      
+      // Refresh posts to show updated tip counts
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
       onTipSuccess();
     }
   }, [
     isConfirmed,
     toastId,
     post.author,
+    post.id,
     resetTransaction,
     onTipSuccess,
     customTipAmount,
     isThisPostTipping,
     setTippingPostId,
+    queryClient,
   ]);
 
   return (
@@ -347,15 +373,17 @@ function PostCard({
             </div>
           </div>
         </div>
-        <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
-          <a
-            href={`https://warpcast.com/~/conversations/${post.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </Button>
+        {post.id.startsWith("local_") ? null : (
+          <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
+            <a
+              href={`https://warpcast.com/~/conversations/${post.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </Button>
+        )}
       </div>
 
       <div className="mb-3 whitespace-pre-wrap">{post.text}</div>
@@ -366,24 +394,37 @@ function PostCard({
             <Heart className="h-4 w-4 text-muted-foreground" />
             <span>{post.reactions.likes_count}</span>
           </div>
-          <div className="flex items-center gap-1 text-sm">
-            <Repeat2 className="h-4 w-4 text-muted-foreground" />
-            <span>{post.reactions.recasts_count}</span>
-          </div>
+          {post.tipsCount !== undefined && (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Send className="h-4 w-4" />
+              <span>{post.tipsCount} tip{post.tipsCount !== 1 ? 's' : ''}</span>
+              {post.totalTipsAmount && parseFloat(post.totalTipsAmount) > 0 && (
+                <span className="text-xs">({parseFloat(post.totalTipsAmount).toFixed(2)} USDC)</span>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="outline"
             className="gap-1"
-            disabled={!account.address || isConfirming || isTransactionPending}
+            disabled={
+              !account.address ||
+              isConfirming ||
+              isTransactionPending ||
+              !post.author.verified_addresses.eth_addresses?.[0] ||
+              !isAddress(post.author.verified_addresses.eth_addresses[0])
+            }
             onClick={handleTip}
             title={
-              isTransactionPending || isConfirming
-                ? isThisPostTipping
-                  ? "Sending tip..."
-                  : "A tip is already being sent"
-                : undefined
+              !post.author.verified_addresses.eth_addresses?.[0]
+                ? "This post doesn't have an address to receive tips"
+                : isTransactionPending || isConfirming
+                  ? isThisPostTipping
+                    ? "Sending tip..."
+                    : "A tip is already being sent"
+                  : undefined
             }
           >
             <Send className="h-4 w-4" />
@@ -400,14 +441,20 @@ function PostCard({
                 variant="outline"
                 className="gap-1"
                 disabled={
-                  !account.address || isConfirming || isTransactionPending
+                  !account.address ||
+                  isConfirming ||
+                  isTransactionPending ||
+                  !post.author.verified_addresses.eth_addresses?.[0] ||
+                  !isAddress(post.author.verified_addresses.eth_addresses[0])
                 }
                 title={
-                  isTransactionPending || isConfirming
-                    ? isThisPostTipping
-                      ? "Sending tip..."
-                      : "A tip is already being sent"
-                    : undefined
+                  !post.author.verified_addresses.eth_addresses?.[0]
+                    ? "This post doesn't have an address to receive tips"
+                    : isTransactionPending || isConfirming
+                      ? isThisPostTipping
+                        ? "Sending tip..."
+                        : "A tip is already being sent"
+                      : undefined
                 }
               >
                 <Send className="h-4 w-4" />
@@ -418,8 +465,8 @@ function PostCard({
               <DialogHeader>
                 <DialogTitle>Send Custom Tip (USDC)</DialogTitle>
                 <DialogDescription>
-                  Enter the amount of USDC you want to tip @
-                  {post.author.username}
+                  Enter the amount of USDC you want to tip{" "}
+                  {post.author.display_name}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">

@@ -12,10 +12,11 @@ export function getConfig() {
           creation: "on-connect",
           defaultAccount: "sub",
         },
-        paymasterUrls: {
-          [baseSepolia.id]: process.env
-            .NEXT_PUBLIC_PAYMASTER_SERVICE_URL as string,
-        },
+        ...(process.env.NEXT_PUBLIC_PAYMASTER_SERVICE_URL && {
+          paymasterUrls: {
+            [baseSepolia.id]: process.env.NEXT_PUBLIC_PAYMASTER_SERVICE_URL,
+          },
+        }),
       }),
     ],
     storage: createStorage({

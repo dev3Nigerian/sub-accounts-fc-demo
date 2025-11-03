@@ -11,6 +11,7 @@ import {
   useConnections,
 } from "wagmi";
 import Posts from "../components/posts";
+import CreatePost from "../components/create-post";
 import {
   Dialog,
   DialogContent,
@@ -178,9 +179,9 @@ function App() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between px-4 pb-4 md:pb-8 md:px-8">
       <div className="w-full max-w-2xl mx-auto">
-        <nav className="flex justify-between items-center sticky top-0 bg-background z-10 py-4">
+        <nav className="flex justify-between items-center sticky top-0 bg-background z-10 py-4 border-b">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">Feed</h1>
+            <h1 className="text-2xl font-bold">Anonymous Forum</h1>
             <a
               href="https://github.com/stephancill/sub-accounts-fc-demo"
               target="_blank"
@@ -325,6 +326,10 @@ function App() {
             </div>
           )}
         </nav>
+
+        <div className="mt-6 mb-4">
+          <CreatePost />
+        </div>
 
         <Posts onTipSuccess={() => {}} />
       </div>
