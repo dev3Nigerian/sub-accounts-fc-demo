@@ -26,11 +26,16 @@
         "ogTitle": "Anonymous Forum",
         "ogDescription": "Post anonymously, tip freely",
         "ogImageUrl": "https://sub-accounts-fc-demo.vercel.app/icons/hero-1200x630.png",
-        "noindex": false
+        "noindex": false,
+        "castShareUrl": "https://sub-accounts-fc-demo.vercel.app"
     },
     "accountAssociation": {
         "header": "eyJmaWQiOjU4NzY4OSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDNDMDkxRTc1YUU5NUE4MWVGMjhlMTVkMjM0QUY5NmE3MDEwNTAyMUUifQ",
         "payload": "eyJkb21haW4iOiJzdWItYWNjb3VudHMtZmMtZGVtby52ZXJjZWwuYXBwIn0",
         "signature": "Br2ttpMYx+lYOfxZXrEY8SGY5IW73bPL4TQ4DRHOkzFnlXc0BDP3VOCXAAFzIHgOpRqqvonRASLfw5YVPc79dRs="
+    },
+    "baseBuilder": {
+        "ownerAddress": "0x216Bd1C6266BE19625795aF5A523E939aEDfF0F1"
     }
+    
 }
