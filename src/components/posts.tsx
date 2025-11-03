@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { USDC, erc20Abi } from "@/lib/usdc";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { ExternalLink, Heart, Repeat2, Send, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -85,6 +85,7 @@ export default function Posts({ onTipSuccess }: { onTipSuccess: () => void }) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    refetch,
   } = useInfiniteQuery({
     queryKey: ["posts"],
     queryFn: fetchPosts,
@@ -160,6 +161,7 @@ export default function Posts({ onTipSuccess }: { onTipSuccess: () => void }) {
           resetTransaction={resetTransaction}
           tippingPostId={tippingPostId}
           setTippingPostId={setTippingPostId}
+          refetchPosts={refetch}
         />
       ))}
 
@@ -191,6 +193,7 @@ function PostCard({
   resetTransaction,
   tippingPostId,
   setTippingPostId,
+  refetchPosts,
 }: {
   post: Post;
   onTipSuccess: () => void;
@@ -201,9 +204,9 @@ function PostCard({
   resetTransaction: () => void;
   tippingPostId: string | null;
   setTippingPostId: (id: string | null) => void;
+  refetchPosts: () => void;
 }) {
   const account = useAccount();
-  const queryClient = useQueryClient();
   const { data: balance } = useBalance({
     address: account.address,
     token: USDC.address,
@@ -314,14 +317,48 @@ function PostCard({
     if (isConfirmed && toastId !== null && isThisPostTipping) {
       const tipAmount = customTipAmount || "0.10";
       
-      // Update tip count on the server (async, don't wait)
+      console.log(`[TIP] Updating tip count for post ${post.id} with amount ${tipAmount}`);
+      
+      // Update tip count on the server and then refresh posts
       fetch(`/api/posts/${post.id}/tip`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: tipAmount }),
-      }).catch(() => {
-        // Silently fail - this is just for stats
-      });
+      })
+        .then((response) => {
+          if (!response.ok) {
+            console.error("Failed to update tip count:", response.statusText);
+            return response.text().then(text => {
+              console.error("Error response:", text);
+              throw new Error(response.statusText);
+            });
+          }
+          return response.json();
+        })
+        .then(async (data) => {
+          console.log("[TIP] Tip count updated successfully:", data);
+          // Wait a brief moment to ensure DB write is complete, then refetch
+          setTimeout(async () => {
+            console.log("[TIP] Refetching posts to show updated tip count...");
+            try {
+              await refetchPosts();
+              console.log("[TIP] Posts refetched successfully");
+            } catch (refetchError) {
+              console.error("[TIP] Error refetching posts:", refetchError);
+            }
+          }, 500);
+        })
+        .catch((error) => {
+          console.error("[TIP] Error updating tip count:", error);
+          // Still try to refetch in case the update succeeded
+          setTimeout(async () => {
+            try {
+              await refetchPosts();
+            } catch (refetchError) {
+              console.error("[TIP] Error refetching posts:", refetchError);
+            }
+          }, 500);
+        });
 
       toast.success("Tip sent successfully!", {
         description: `You tipped ${post.author.display_name} with ${tipAmount} USDC`,
@@ -335,9 +372,6 @@ function PostCard({
       setToastId(null);
       setTippingPostId(null);
       resetTransaction();
-      
-      // Refresh posts to show updated tip counts
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
       onTipSuccess();
     }
   }, [
@@ -350,7 +384,7 @@ function PostCard({
     customTipAmount,
     isThisPostTipping,
     setTippingPostId,
-    queryClient,
+    refetchPosts,
   ]);
 
   return (
@@ -394,15 +428,13 @@ function PostCard({
             <Heart className="h-4 w-4 text-muted-foreground" />
             <span>{post.reactions.likes_count}</span>
           </div>
-          {post.tipsCount !== undefined && (
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Send className="h-4 w-4" />
-              <span>{post.tipsCount} tip{post.tipsCount !== 1 ? 's' : ''}</span>
-              {post.totalTipsAmount && parseFloat(post.totalTipsAmount) > 0 && (
-                <span className="text-xs">({parseFloat(post.totalTipsAmount).toFixed(2)} USDC)</span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Send className="h-4 w-4" />
+            <span>{post.tipsCount ?? 0} tip{post.tipsCount !== 1 ? 's' : ''}</span>
+            {post.totalTipsAmount && parseFloat(post.totalTipsAmount) > 0 && (
+              <span className="text-xs">({parseFloat(post.totalTipsAmount).toFixed(2)} USDC)</span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button

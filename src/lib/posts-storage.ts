@@ -101,15 +101,26 @@ class PostsStorage {
     await connectDB();
 
     try {
+      console.log(`[DB] Looking for post with ID: ${postId}`);
       const post = await Post.findById(postId);
-      if (post) {
-        post.tipsCount += 1;
-        const currentAmount = parseFloat(post.totalTipsAmount || "0");
-        post.totalTipsAmount = (currentAmount + parseFloat(amount)).toFixed(6);
-        await post.save();
+      if (!post) {
+        console.error(`[DB] Post not found with ID: ${postId}`);
+        throw new Error(`Post not found with ID: ${postId}`);
       }
+
+      console.log(`[DB] Post found. Current tipsCount: ${post.tipsCount}, totalTipsAmount: ${post.totalTipsAmount}`);
+
+      post.tipsCount = (post.tipsCount || 0) + 1;
+      const currentAmount = parseFloat(post.totalTipsAmount || "0");
+      post.totalTipsAmount = (currentAmount + parseFloat(amount)).toFixed(6);
+
+      console.log(`[DB] Updating to tipsCount: ${post.tipsCount}, totalTipsAmount: ${post.totalTipsAmount}`);
+
+      await post.save();
+
+      console.log(`[DB] Post saved successfully`);
     } catch (error) {
-      console.error("Error incrementing tips:", error);
+      console.error("[DB] Error incrementing tips:", error);
       throw error;
     }
   }
