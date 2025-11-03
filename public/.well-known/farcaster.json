@@ -1,13 +1,20 @@
 {
-    "miniapp": {
-        "version": "1",
+    "frame": {
         "name": "Anonymous Forum",
-        "description": "A decentralized anonymous forum where users can post and receive USDC tips on Base",
-        "iconUrl": "https://sub-accounts-fc-demo.vercel.app/icons/icon-1024.png",
+        "version": "1",
+        "iconUrl": "https://sub-accounts-fc-demo.vercel.app/icon.png",
         "homeUrl": "https://sub-accounts-fc-demo.vercel.app",
-        "splashImageUrl": "https://sub-accounts-fc-demo.vercel.app/icons/splash-200.png",
+        "imageUrl": "https://sub-accounts-fc-demo.vercel.app/image.png",
+        "splashImageUrl": "https://sub-accounts-fc-demo.vercel.app/splash.png",
         "splashBackgroundColor": "#191a43",
-        "heroImageUrl": "https://sub-accounts-fc-demo.vercel.app/icons/hero-1200x630.png",
-        "tagline": "Post anonymously, tip freely"
+        "webhookUrl": "https://sub-accounts-fc-demo.vercel.app/api/webhook",
+        "subtitle": "Post anonymously, tip freely",
+        "description": "A decentralized anonymous forum where users can post and receive USDC tips on Base",
+        "primaryCategory": "social"
+    },
+    "accountAssociation": {
+        "header": "eyJmaWQiOjU4NzY4OSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDNDMDkxRTc1YUU5NUE4MWVGMjhlMTVkMjM0QUY5NmE3MDEwNTAyMUUifQ",
+        "payload": "eyJkb21haW4iOiJzdWItYWNjb3VudHMtZmMtZGVtby52ZXJjZWwuYXBwIn0",
+        "signature": "Br2ttpMYx+lYOfxZXrEY8SGY5IW73bPL4TQ4DRHOkzFnlXc0BDP3VOCXAAFzIHgOpRqqvonRASLfw5YVPc79dRs="
     }
 }
